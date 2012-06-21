@@ -16,15 +16,15 @@ class cassandra::params {
 	}
         
 	$data_path = $::hostname ? {
-		default			=> "/var/lib/cassandra/data",
+		default			=> "/var/lib/data",
 	}
         
         $commitlog_directory = $::hostname ? {
-                default                 => "/var/lib/cassandra/commitlog",
+                default                 => "/var/lib/commitlog",
         }
         
         $saved_caches = $::hostname ? {
-                default                 => "/var/lib/cassandra/saved_caches",
+                default                 => "/home/cassandra/saved_caches",
         }
         
         $cluser_name = $::hostname ? {
@@ -40,7 +40,7 @@ class cassandra::params {
         }
         
         $seeds = $::hostname ? {
-                default                 => "cassandra-01, cassandra-02",
+                default                 => "cassandra-01, cassandra-02, cassandra-03, cassandra-04",
         }
         
         $cassandra_log_path = $::hostname ? {

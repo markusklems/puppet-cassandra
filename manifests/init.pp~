@@ -3,52 +3,65 @@
 class cassandra {
 
         require cassandra::params       
-  	
-   service { "cassandra-service":
-        ensure => 'running',
-        enable => true,
-        hasstatus => true,
-        start => "/etc/init.d/cassandra start",
-        status => "/etc/init.d/cassandra status",
-        stop => "/etc/init.d/cassandra stop",
-        require => File["/etc/init.d/cassandra"],
-   }
+    	
+        group { "cassandra":
+		ensure => present,
+		gid => "900",
+	}
 
-	file { "/etc/init.d/cassandra":
-        ensure => present,
-        content => template("cassandra/service/cassandra-service.erb"),
-        require => File["/usr/local/cassandra"],
-    }
-
+	user { "cassandra":
+		ensure => present,
+		comment => "Cassandra",
+		password => "!!",
+		uid => "900",
+		gid => "900",
+		shell => "/bin/bash",
+		home => "/usr/local/cassandra",
+		require => Group["cassandra"],
+	}
+		
 	file { "/usr/local/cassandra":
 		ensure => "directory",
+		owner => "cassandra",
+		group => "cassandra",
 		alias => "cassandra-home",
+		require => [ User["cassandra"], Group["cassandra"] ],
 	}
 	
         file {"$cassandra::params::cassandra_base":
 		ensure => "directory",
+		owner => "cassandra",
+		group => "cassandra",
 		alias => "cassandra-base",
 	}
         
         file {"$cassandra::params::cassandra_log_path":
 		ensure => "directory",
+		owner => "cassandra",
+		group => "cassandra",
 		alias => "cassandra-log-path",
         require => File["cassandra-base"]
 	}
 	
         file {"$cassandra::params::data_path":
 		ensure => "directory",
+		owner => "cassandra",
+		group => "cassandra",
 		alias => "cassandra-data-path",
 	}
         
         file {"$cassandra::params::commitlog_directory":
 		ensure => "directory",
+		owner => "cassandra",
+		group => "cassandra",
 		alias => "cassandra-commitlog-directory",
         require => File["cassandra-base"]
 	}
         
         file {"$cassandra::params::saved_caches":
 		ensure => "directory",
+		owner => "cassandra",
+		group => "cassandra",
 		alias => "cassandra-saved-caches",
         require => File["cassandra-base"]
 	}
@@ -56,13 +69,26 @@ class cassandra {
         file { "${cassandra::params::cassandra_base}/apache-cassandra-${cassandra::params::version}":
 		ensure => "directory",
 		mode => 0644,
+		owner => "cassandra",
+		group => "cassandra",
 		alias => "cassandra-app-dir",
                 before => [ File["cassandra-yaml"], File["cassandra-log4j"], File["cassandra-env"] ]
+	}
+		
+	file { "${cassandra::params::cassandra_base}/apache-cassandra":
+		force => true,
+		ensure => "${cassandra::params::cassandra_base}/apache-cassandra-${cassandra::params::version}",
+		alias => "cassandra-symlink",
+		owner => "cassandra",
+		group => "cassandra",
+		require => File["cassandra-source-tgz"],
 	}
         
         file { "${cassandra::params::cassandra_base}/apache-cassandra-${cassandra::params::version}/conf/cassandra.yaml":
                 alias => "cassandra-yaml",
                 content => template("cassandra/conf/cassandra.yaml.erb"),
+                owner => "cassandra",
+                group => "cassandra",
                 mode => "644",
                 require => File["cassandra-app-dir"]
         }
@@ -70,6 +96,8 @@ class cassandra {
         file { "${cassandra::params::cassandra_base}/apache-cassandra-${cassandra::params::version}/conf/cassandra-env.sh":
                 alias => "cassandra-env",
                 content => template("cassandra/conf/cassandra-env.sh.erb"),
+                owner => "cassandra",
+                group => "cassandra",
                 mode => "644",
                 require => File["cassandra-app-dir"]
         }
@@ -77,12 +105,16 @@ class cassandra {
         file { "${cassandra::params::cassandra_base}/apache-cassandra-${cassandra::params::version}/conf/log4j-server.properties":
                 alias => "cassandra-log4j",
                 content => template("cassandra/conf/log4j-server.properties.erb"),
+                owner => "cassandra",
+                group => "cassandra",
                 mode => "644",
                 require => File["cassandra-app-dir"]
         }
 	file {"${cassandra::params::cassandra_base}/apache-cassandra-${cassandra::params::version}/lib/mx4j-tools.jar":
 		ensure => present,
 		source => "puppet:///modules/cassandra/mx4j-tools.jar",
+		owner => "cassandra",
+		group => "cassandra",
 		mode => "644",
 	}
 

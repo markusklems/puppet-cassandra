@@ -1,0 +1,117 @@
+#!/bin/bash
+
+PROG="$CASSANDRA_HOME/bin/cassandra -f"
+PROGNAME="Cassandra"
+
+LOGFILE=/var/log/cassandra.log
+PIDFILE=/var/run/cassandra.pid
+
+running(){
+    PID=\`cat \$PIDFILE 2>/dev/null\`
+
+    # Check that the pid is sane.
+    if [ "x\$PID" == "x" ] ; then
+        false
+    else
+        # Check that the process is alive.
+        ps \$PID >/dev/null 2>&1
+    fi
+}
+
+start(){
+    echo -n $"Starting \$PROGNAME: "
+
+    # Try to start the program.
+    if running; then
+        echo "Failed.  Maybe remove \$PIDFILE?"
+        false
+    else
+        mkdir -p \`dirname \$LOGFILE\`
+        \$PROG > \$LOGFILE 2>&1 &
+        PID=\$!
+        mkdir -p \`dirname \$PIDFILE\`
+        echo \$PID > \$PIDFILE
+
+        echo "Success."
+        true
+    fi
+}
+
+stop(){
+    echo -n $"Stopping \$PROGNAME: "
+
+    # Check if it's already stopped.
+    if ! running ; then
+        echo "Failed.  Already stopped."
+        false
+    else
+         # Find the PID and kill it.
+        PID=\`cat \$PIDFILE 2>/dev/null\`
+        if [ "x\$PID" == "x" ] ; then
+            echo "Failed."
+            false
+        else
+            # (Try five times to kill it).
+            for i in \`seq 0 5\`; do
+                kill \$PID
+                sleep 1
+                if ! running ; then
+                    break
+                fi
+            done
+
+            # Check if it is finished.
+            if running ; then
+                echo "Failed."
+                false
+            else
+                # Clear out the pidfile.
+                echo "Success."
+                rm -f \$PIDFILE
+                true
+            fi
+        fi
+    fi
+}
+
+restart(){
+    stop
+    start
+}
+
+status(){
+    echo -n $"Status of \$PROGNAME: "
+
+    if running ; then
+        echo "Running."
+        true
+    else
+        echo "Not running."
+        false
+    fi
+}
+
+# See how we were called.
+case "\$1" in
+    start)
+ start
+ RETVAL=\$?
+ ;;
+    stop)
+ stop
+ RETVAL=\$?
+ ;;
+    status)
+ status
+ RETVAL=\$?
+ ;;
+    restart)
+ restart
+ RETVAL=\$?
+ ;;
+    *)
+ echo $"Usage: \$0 {start|stop|status|restart}"
+ RETVAL=2
+esac
+
+exit
